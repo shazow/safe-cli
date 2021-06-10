@@ -175,6 +175,18 @@ def build_prompt_parser(safe_operator: SafeOperator) -> argparse.ArgumentParser:
         safe_operator.change_threshold(args.threshold)
 
     @safe_exception
+    def pre_change_threshold(args):
+        safe_operator.pre_change_threshold(args.threshold)
+
+    @safe_exception
+    def sign_multisig_tx(args):
+        safe_operator.sign_multisig_tx(args.data)
+
+    @safe_exception
+    def execute_signed(args):
+        safe_operator.execute_signed(args.data, self.signatures)
+
+    @safe_exception
     def send_custom(args):
         destination = _parser_to_transaction_destination(args)
         safe_operator.send_custom(args.to, args.value, args.data,
@@ -257,6 +269,22 @@ def build_prompt_parser(safe_operator: SafeOperator) -> argparse.ArgumentParser:
     parser_change_threshold = subparsers.add_parser('change_threshold')
     parser_change_threshold.add_argument('threshold', type=int)
     parser_change_threshold.set_defaults(func=change_threshold)
+
+    # Change threshold
+    parser_pre_change_threshold = subparsers.add_parser('pre_change_threshold')
+    parser_pre_change_threshold.add_argument('threshold', type=int)
+    parser_pre_change_threshold.set_defaults(func=pre_change_threshold)
+
+    # Sign multisig tx
+    parser_pre_change_threshold = subparsers.add_parser('sign_multisig_tx')
+    parser_pre_change_threshold.add_argument('data', type=check_hex_str)
+    parser_pre_change_threshold.set_defaults(func=sign_multisig_tx)
+
+    # Execute signed
+    parser_pre_change_threshold = subparsers.add_parser('execute_signed')
+    parser_pre_change_threshold.add_argument('data', type=check_hex_str)
+    parser_pre_change_threshold.add_argument('signatures', type=str)
+    parser_pre_change_threshold.set_defaults(func=execute_signed)
 
     # Approve hash
     parser_approve_hash = subparsers.add_parser('approve_hash')
