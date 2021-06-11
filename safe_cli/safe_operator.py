@@ -484,12 +484,19 @@ class SafeOperator:
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
         self.pre_sign_transaction(safe_tx)
 
-        print('SIGNATURES: ', safe_tx.signatures) # TODO: serialize signatures
+        if not safe_tx.signatures:
+            print('No relevant private keys to sign with.')
+            return
 
-    def execute_signed(self, data: HexBytes, signatures: bytes):
+        sigs = ','.join(s.hex() for s in safe_tx.signatures)
+        print('SIGNATURES: ', sigs)
+
+    def execute_signed(self, data: HexBytes, signatures: str):
         self._require_default_sender()  # Throws Exception if default sender not found
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
-        # TODO: safe_tx.signatures = ... deserialize signatures
+        safe_tx.signatures = [bytes.fromhex(s) for s in signatures.split(',')]
+
+        print('EXECUTING TRANSACTION')
 
         try:
             call_result = safe_tx.call(self.default_sender.address)
