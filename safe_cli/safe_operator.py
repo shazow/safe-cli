@@ -488,13 +488,12 @@ class SafeOperator:
             print('No relevant private keys to sign with.')
             return
 
-        sigs = ','.join(s.hex() for s in safe_tx.signatures)
-        print('SIGNATURES: ', sigs)
+        print('SIGNATURES: ', safe_tx.signatures.hex())
 
     def execute_signed(self, data: HexBytes, signatures: str):
         self._require_default_sender()  # Throws Exception if default sender not found
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
-        safe_tx.signatures = [bytes.fromhex(s) for s in signatures.split(',')]
+        safe_tx.signatures = bytes.fromhex(signatures)
 
         print('EXECUTING TRANSACTION')
 
