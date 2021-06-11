@@ -480,9 +480,9 @@ class SafeOperator:
 
             print('TRANSACTION DATA TO SIGN:', transaction['data'])
 
-    def sign_multisig_tx(self, data: HexBytes, last_sig: str=""):
+    def sign_multisig_tx(self, data: HexBytes, last_sig: str=None):
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
-        if last_sig:
+        if last_sig and last_sig != "null":
             safe_tx.signatures = bytes.fromhex(last_sig)
         self.pre_sign_transaction(safe_tx)
 
