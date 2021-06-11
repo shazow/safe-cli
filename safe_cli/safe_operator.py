@@ -480,8 +480,10 @@ class SafeOperator:
 
             print('TRANSACTION DATA TO SIGN:', transaction['data'])
 
-    def sign_multisig_tx(self, data: HexBytes):
+    def sign_multisig_tx(self, data: HexBytes, last_sig: str=""):
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
+        if last_sig:
+            safe_tx.signatures = bytes.fromhex(last_sig)
         self.pre_sign_transaction(safe_tx)
 
         if not safe_tx.signatures:
@@ -496,7 +498,6 @@ class SafeOperator:
         safe_tx.signatures = bytes.fromhex(signatures)
 
         print('EXECUTING TRANSACTION')
-
         try:
             call_result = safe_tx.call(self.default_sender.address)
             print_formatted_text(HTML(f'Result: <ansigreen>{call_result}</ansigreen>'))

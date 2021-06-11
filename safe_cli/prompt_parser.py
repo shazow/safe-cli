@@ -278,6 +278,7 @@ def build_prompt_parser(safe_operator: SafeOperator) -> argparse.ArgumentParser:
     # Sign multisig tx
     parser_sign_multisig_tx = subparsers.add_parser('sign_multisig_tx')
     parser_sign_multisig_tx.add_argument('data', type=check_hex_str)
+    parser_sign_multisig_tx.add_argument('last_sig', type=str, default='')
     parser_sign_multisig_tx.set_defaults(func=sign_multisig_tx)
 
     # Execute signed
