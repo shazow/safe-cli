@@ -512,7 +512,7 @@ class SafeOperator:
             prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
             prev_signers += [account.address]
         else:
-            print('No relevant private keys to sign with.')
+            print('No relevant private keys to sign with. Owners: ', self.safe_cli_info.owners)
             return
 
         sigs = prev_signatures.hex()
