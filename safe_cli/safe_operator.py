@@ -453,16 +453,13 @@ class SafeOperator:
             self.safe_cli_info.version = self.safe.retrieve_version()
 
     def _select_accounts(self):
+        """Return relevant accounts"""
         # Copypasta of sign_transaction minus threshold check
         owners = self.safe_cli_info.owners
-        threshold = self.safe_cli_info.threshold
         selected_accounts: List[Account] = []  # Some accounts that are not an owner can be loaded
         for account in self.accounts:
             if account.address in owners:
                 selected_accounts.append(account)
-                threshold -= 1
-                if threshold == 0:
-                    break
 
         return selected_accounts
 
@@ -512,7 +509,7 @@ class SafeOperator:
             prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
             prev_signers += [account.address]
         else:
-            print('No relevant private keys to sign with. Owners: ', self.safe_cli_info.owners)
+            print('No relevant private keys to sign with. Owners:', self.safe_cli_info.owners)
             return
 
         sigs = prev_signatures.hex()
