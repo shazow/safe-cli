@@ -505,12 +505,14 @@ class SafeOperator:
             prev_signers = signers.split(',')
             prev_signatures = bytes.fromhex(sigs)
 
-        for account in self._select_accounts():
-            prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
-            prev_signers += [account.address]
-        else:
+        relevant_accounts = self._select_accounts()
+        if not relevant_accounts:
             print('No relevant private keys to sign with. Owners:', self.safe_cli_info.owners)
             return
+
+        for account in relevant_accounts:
+            prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
+            prev_signers += [account.address]
 
         sigs = prev_signatures.hex()
         signers = ','.join(prev_signers)
