@@ -511,6 +511,9 @@ class SafeOperator:
         for account in self._select_accounts():
             prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
             prev_signers += [account.address]
+        else:
+            print('No relevant private keys to sign with.')
+            return
 
         sigs = prev_signatures.hex()
         signers = ','.join(prev_signers)
