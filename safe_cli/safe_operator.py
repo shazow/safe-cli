@@ -452,7 +452,7 @@ class SafeOperator:
             self.safe_cli_info.fallback_handler = LAST_DEFAULT_CALLBACK_HANDLER
             self.safe_cli_info.version = self.safe.retrieve_version()
 
-    def pre_sign_transaction(self, safe_tx: SafeTx) -> NoReturn:
+    def _select_accounts(self):
         # Copypasta of sign_transaction minus threshold check
         owners = self.safe_cli_info.owners
         threshold = self.safe_cli_info.threshold
@@ -464,10 +464,9 @@ class SafeOperator:
                 if threshold == 0:
                     break
 
-        for selected_account in selected_accounts:
-            safe_tx.sign(selected_account.key)
+        return selected_accounts
 
-    def pre_change_threshold(self, threshold: int):
+    def pre_change_threshold(self, threshold: int) -> str:
         if threshold == self.safe_cli_info.threshold:
             print_formatted_text(HTML(f'<ansired>Threshold is already {threshold}</ansired>'))
         elif threshold > len(self.safe_cli_info.owners):
@@ -479,25 +478,52 @@ class SafeOperator:
             ).buildTransaction({'from': self.address, 'gas': 0, 'gasPrice': 0})
 
             print('TRANSACTION DATA TO SIGN:', transaction['data'])
+            return transaction['data']
 
-    def sign_multisig_tx(self, data: HexBytes, last_sig: str=None):
+    def _sign(self, private_key, tx_hash, prev_signers=[], prev_signature=b''):
+        # Modified copypasta from gnosis/safe/safe_tx.py
+        account = Account.from_key(private_key)
+        signature_dict = account.signHash(tx_hash)
+        from gnosis.safe.signatures import signature_to_bytes
+        signature = signature_to_bytes((signature_dict['v'],
+                                       signature_dict['r'],
+                                       signature_dict['s']))
+
+        # Insert signature sorted
+        if account.address not in prev_signers:
+            new_owners = prev_signers + [account.address]
+            new_owner_pos = sorted(new_owners,
+                                   key=lambda x: int(x, 16)
+                                   ).index(account.address)
+            prev_signature = (prev_signature[: 65 * new_owner_pos] + signature
+                               + prev_signature[65 * new_owner_pos:])
+        return prev_signature
+
+    def sign_multisig_tx(self, data: HexBytes, last_sig: Optional[str] = None) -> str:
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
+        prev_signers = []
+        prev_signatures = b''
         if last_sig and last_sig != "null":
-            safe_tx.signatures = bytes.fromhex(last_sig)
-        self.pre_sign_transaction(safe_tx)
+            signers, sigs = last_sig.split(':')
+            prev_signers = signers.split(',')
+            prev_signatures = bytes.fromhex(sigs)
 
-        if not safe_tx.signatures:
-            print('No relevant private keys to sign with.')
-            return
+        for account in self._select_accounts():
+            prev_signatures = self._sign(account.key, safe_tx.safe_tx_hash, prev_signers, prev_signatures)
+            prev_signers += [account.address]
 
-        print('SIGNATURES: ', safe_tx.signatures.hex())
+        sigs = prev_signatures.hex()
+        signers = ','.join(prev_signers)
+        out = signers + ':' + sigs
+        print('SIGNATURES: ', out)
+        return out
 
     def execute_signed(self, data: HexBytes, signatures: str):
         self._require_default_sender()  # Throws Exception if default sender not found
         safe_tx = self.safe.build_multisig_tx(self.address, 0, data)
-        safe_tx.signatures = bytes.fromhex(signatures)
+        safe_tx.signatures = bytes.fromhex(signatures.split(':')[1])
 
-        print('EXECUTING TRANSACTION')
+        print('EXECUTING TRANSACTION', signatures)
         try:
             call_result = safe_tx.call(self.default_sender.address)
             print_formatted_text(HTML(f'Result: <ansigreen>{call_result}</ansigreen>'))
